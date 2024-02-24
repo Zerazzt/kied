@@ -3,6 +3,8 @@
 #include <vector>
 #include <cstdint>
 #include <string>
+#include <iomanip>
+#include "json.hpp"
 
 // As per the canonical .wav header format
 struct WavHeader {
@@ -22,13 +24,14 @@ struct WavHeader {
 
 int main(int argc, char* argv[]) {
 	// Ensuring all parameters are present
-	if (argc != 2) {
-		std::cerr << "Usage: " << argv[0] << " <input_wav_file>" << std::endl;
+	if (argc != 3) {
+		std::cerr << "Usage: " << argv[0] << " <input_wav_file> <output_file>" << std::endl;
 		return 1;
 	}
 
 	// Open provided file and read
 	std::ifstream file(argv[1], std::ios::binary);
+	
 	
 	if (!file.is_open()) {
 		std::cerr << "Error opening file: " << argv[1] << std::endl;
@@ -46,11 +49,6 @@ int main(int argc, char* argv[]) {
 		file.close();
 		return 1;
 	}
-
-	// Output basic header information
-	std::cout << "Channels: " << header.numChannels << "\n";
-	std::cout << "Sample Rate: " << header.sampleRate << " Hz" << "\n";
-	std::cout << "Bits Per Sample: " << header.bitsPerSample << "\n";
 
 	// Number of data bytes
 	uint32_t dataSize = 0;
@@ -84,7 +82,19 @@ int main(int argc, char* argv[]) {
 	// Compute the number of samples and duration in seconds
 	int numSamples = dataSize / ( header.numChannels * header.bitsPerSample / 8.0);
 	int duration = numSamples / header.sampleRate;
-	std::cout << "Data size: " << dataSize << "\nDuration: " << duration << " seconds" << std::endl;
+
+	// Put output information into JSON object
+	nlohmann::json output = {
+		{"channels"     , header.numChannels},
+		{"sampleRate"   , header.sampleRate},
+		{"bitsPerSample", header.bitsPerSample},
+		{"duration"     , duration}
+	};
+
+	// Save output to file
+	std::ofstream outputFile(argv[2]);
+	outputFile << std::setw(4) << output << std::endl;
+	outputFile.close();
 
 	file.close();
 
