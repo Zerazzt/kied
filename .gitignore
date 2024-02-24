@@ -3,3 +3,4 @@
 *.exe
 parser/wav_test_files/
 env/
+.env
