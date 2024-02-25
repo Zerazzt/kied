@@ -143,9 +143,8 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	const int MAX_SAMPLES = 10000000;
-	std::vector<double> samples(MAX_SAMPLES);
-	numSamples = sf_read_double(inputFile, samples.data(), MAX_SAMPLES);
+	std::vector<double> samples(numSamples);
+	numSamples = sf_read_double(inputFile, samples.data(), numSamples);
 	sf_close(inputFile);
 
 	double averageAmplitude = calculateAverageAmplitude(samples);
