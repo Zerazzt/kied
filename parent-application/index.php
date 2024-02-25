@@ -41,7 +41,6 @@ if (isset($_POST['submit'])) {
 				$command = DOCROOT."parser/parser.o ".escapeshellarg($fileName)." ".WEBROOT."tmp/".$id.".json";
 				exec($command, $output, $status);
 				if ($status === 0) {
-					$processed = true;
 					$name = WEBROOT."tmp/".$id.".json";
 
 					// formats json as string string 
@@ -75,7 +74,6 @@ if (isset($_POST['submit'])) {
 		$command = "python3 ".DOCROOT."data-retriever/spotify-audio-features.py ".escapeshellarg($trackID)." ".WEBROOT."tmp/".$id.".json";
 		exec($command, $output, $status);
 		if ($status === 0) {
-			$processed = true;
 			$name = WEBROOT."tmp/".$id.".json";
 
 			// formats json as string
@@ -95,25 +93,22 @@ if (isset($_POST['submit'])) {
 		}
 	}
 
-	if ($processed) {
-		if ($_POST['descriptor'] == descriptors['gpt']) {
-			// The last string is to reroute errors so that they're visible in the output
-			// Part of trying to debug what what was happening with the custom parser output as input
-			$command = "python3 ".DOCROOT."descriptive-subtitle/descriptive-subtitle.py ".$name." 2>&1";
-			exec($command, $output, $status);
-			if ($status === 0) {
-				$described = true;
-				$description = $output[0];
-			}
-			else {
-				echo "GPT EXEC FAIL:";
-				var_dump($output);
-			}
+	if ($_POST['descriptor'] == descriptors['gpt']) {
+		// The last string is to reroute errors so that they're visible in the output
+		// Part of trying to debug what what was happening with the custom parser output as input
+		$command = "python3 ".DOCROOT."descriptive-subtitle/descriptive-subtitle.py ".$name." 2>&1";
+		exec($command, $output, $status);
+		if ($status === 0) {
+			$description = $output[0];
 		}
-		else if ($_POST['descriptor'] == descriptors['custom']) {
-			$described = true;
-			$description = "NOT DONE";
+		else {
+			echo "GPT EXEC FAIL:";
+			var_dump($output);
 		}
+	}
+	else if ($_POST['descriptor'] == descriptors['custom']) {
+		$path = WEBROOT."tmp/".pathinfo($_FILES['wav']['name'], PATHINFO_FILENAME).".txt";
+		$description = file_get_contents(WEBROOT."tmp/".pathinfo($_FILES['wav']['name'], PATHINFO_FILENAME).".txt");
 	}
 }
 
@@ -216,20 +211,5 @@ if (isset($_POST['submit'])) {
             
         }
     </script>
-	<pre>
-<?php
-// Don't change this alignment unless you're changing the pre block as well.
-if ($processed) {
-	echo file_get_contents($name);
-}
-?>
-	</pre>
-
-	<span>
-	<?php if ($described) {
-		// echo $description;
-	}
-	?>
-	</span>
 </body>
 </html>
