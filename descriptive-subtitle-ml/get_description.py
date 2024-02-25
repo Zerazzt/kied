@@ -44,12 +44,12 @@ def parse_spotify(json_metrics):
 
 
 def get_description(file, option):
-    if option == "2":
-        spotify = joblib.load('/var/www/kieddemo/descriptive-subtitle-ml/files/spotify-clf.pkl')
+    if option == "1":
+        spotify = joblib.load('files/spotify-clf.pkl')
         result = spotify.predict(parse_spotify(file))
         result_string = ' '.join(result.flatten().astype(str))
         result = result_string + " music"
-    elif option == "1":
+    elif option == "2":
         custom = joblib.load('files/custom-clf.pkl')
         result = custom.predict(parse_custom(file))[0]
     return result
@@ -60,7 +60,7 @@ option = sys.argv[2]
 output_file = sys.argv[3]
 
 if option not in ['1', '2']:
-    print("Invalid option. Please provide '2' for spotify data or '1' for custom data.")
+    print("Invalid option. Please provide '1' for spotify data or '2' for custom data.")
     sys.exit(1)
 
 with open(metrics_file, 'r') as json_file:
