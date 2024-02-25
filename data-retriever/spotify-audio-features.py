@@ -1,8 +1,11 @@
+# TO RUN THIS FILE: python scriptname.py trackid outputfile
+# OUTPUT: .json file with metrics
 from dotenv import load_dotenv
 import os
 import base64
 import requests 
 import json
+import sys
 
 load_dotenv()
 
@@ -39,3 +42,19 @@ def get_audio_features(track_id):
         print(f"Error: {response.status_code}")
         return None
     
+
+# get arguments
+if len(sys.argv) < 3:
+    sys.exit(-1)
+
+track_id = sys.argv[1]
+output_file = sys.argv[2]
+
+metrics = get_audio_features(track_id)
+
+# outputs metrics to file
+with open(output_file, 'w') as json_file:
+    json.dump(metrics, json_file, indent=4)
+
+
+

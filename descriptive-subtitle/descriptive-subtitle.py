@@ -1,8 +1,13 @@
+# TO RUN THIS FILE: python scriptname.py metrics_file
+# OUTPUT: print description
+
 from openai import OpenAI
 from dotenv import load_dotenv
 import json
+import sys
 import os
 load_dotenv()
+
 
 def get_description(metrics):
     client = OpenAI(api_key=os.getenv("GPT_API_KEY"))
@@ -20,3 +25,8 @@ def get_description(metrics):
     content = json.loads(response.choices[0].message.content)
     description = content["description"] 
     return description
+
+metrics_file = sys.argv[1]
+with open(metrics_file, 'r') as json_file:
+    metrics = json.load(json_file)
+    print(get_description(metrics))
