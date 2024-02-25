@@ -9,7 +9,6 @@ import sys
 
 
 def parse_custom(json_metrics):
-    # Extract values from JSON
     amplitude = json_metrics["amplitude"]
     bits_per_sample = json_metrics["bitsPerSample"]
     bpm = json_metrics["bpm"]
@@ -17,7 +16,6 @@ def parse_custom(json_metrics):
     duration = json_metrics["duration"]
     sample_rate = json_metrics["sampleRate"]
 
-    # Create DataFrame with extracted values
     df_data = pd.DataFrame({
         'Amplitude': [amplitude],
         'BitsPerSample': [bits_per_sample],
@@ -35,7 +33,6 @@ def parse_spotify(json_metrics):
     speechiness = json_metrics["speechiness"]
     valence = json_metrics["valence"]
 
-    # Create DataFrame with extracted values
     df_data = pd.DataFrame({
         'Energy': [energy],
         'Danceability': [danceability],
@@ -60,6 +57,7 @@ def get_description(file, option):
 
 metrics_file = sys.argv[1]
 option = sys.argv[2]
+output_file = sys.argv[3]
 
 if option not in ['1', '2']:
     print("Invalid option. Please provide '1' for spotify data or '2' for custom data.")
@@ -67,4 +65,7 @@ if option not in ['1', '2']:
 
 with open(metrics_file, 'r') as json_file:
     metrics = json.load(json_file)
-    print(get_description(metrics, option))
+    result = get_description(metrics, option)
+
+    with open(output_file, 'w') as file:
+        file.write(result)
