@@ -1,10 +1,59 @@
+// Compile with g++ parse_wav.cpp -o <output file> -lsndfile
+
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <cstdint>
 #include <string>
 #include <iomanip>
+#include <sndfile.h>
+#include <cmath>
 #include "json.hpp"
+
+double calculateAverageAmplitude(const std::vector<double>& samples) {
+	double sum = 0.0;
+	for (double sample : samples) {
+		sum += std::abs(sample);
+	}
+	return sum / samples.size();
+}
+
+double calculateTempo(const std::vector<double>& samples, double sampleRate) {
+	const int WINDOW_SIZE = 512;
+	const double ENERGY_THRESHOLD_RATIO = 3.5;
+	const double MIN_TEMPO_BPM = 40.0;
+	const double MAX_TEMPO_BPM = 240.0;
+
+	// Loop through the samples and pick out the energies
+	std::vector<double> energyEnvelope;
+	for (size_t i = 0; i < samples.size(); i += WINDOW_SIZE) {
+		double energy = 0.0;
+		for (size_t j = i; j < std::min(i + WINDOW_SIZE, samples.size()); ++j) {
+			energy += samples[j] * samples[j];
+		}
+		energyEnvelope.push_back(energy);
+	}
+
+	// Loop through the energies and look for samples with more energy than the previous sample
+	// Rough indicator of a new beat
+	std::vector<double> onsets;
+	double prevEnergy = 0.0;
+	for (size_t i = 1; i < energyEnvelope.size(); ++i) {
+		if (energyEnvelope[i] > ENERGY_THRESHOLD_RATIO * prevEnergy) {
+			onsets.push_back(i * WINDOW_SIZE / sampleRate);
+		}
+		prevEnergy = energyEnvelope[i];
+	}
+
+	double totalInterval = 0.0;
+	for (size_t i = 1; i < onsets.size(); ++i) {
+		totalInterval += onsets[i] - onsets[i - 1];
+	}
+	double avgInterval = totalInterval / (onsets.size() - 1);
+	double tempo = 60.0 / avgInterval;
+
+	return std::max(std::min(tempo, MAX_TEMPO_BPM), MIN_TEMPO_BPM);
+}
 
 // As per the canonical .wav header format
 struct WavHeader {
@@ -78,17 +127,39 @@ int main(int argc, char* argv[]) {
 		// Skip over the chunk's data
 		file.seekg(subchunkSize, std::ios::cur);
 	}
+	file.close();
 
 	// Compute the number of samples and duration in seconds
 	int numSamples = dataSize / ( header.numChannels * header.bitsPerSample / 8.0);
 	int duration = numSamples / header.sampleRate;
+
+	// Use the sound library for additional processing
+	SNDFILE *inputFile;
+	SF_INFO sfInfo;
+	sfInfo.format = 0;
+	inputFile = sf_open(argv[1], SFM_READ, &sfInfo);
+	if (!inputFile) {
+		std::cerr << "Error: Couldn't open the input file." << std::endl;
+		return 1;
+	}
+
+	const int MAX_SAMPLES = 10000000;
+	std::vector<double> samples(MAX_SAMPLES);
+	numSamples = sf_read_double(inputFile, samples.data(), MAX_SAMPLES);
+	sf_close(inputFile);
+
+	double averageAmplitude = calculateAverageAmplitude(samples);
+	double sampleRate = sfInfo.samplerate;
+	double tempo = calculateTempo(samples, sampleRate);
 
 	// Put output information into JSON object
 	nlohmann::json output = {
 		{"channels"     , header.numChannels},
 		{"sampleRate"   , header.sampleRate},
 		{"bitsPerSample", header.bitsPerSample},
-		{"duration"     , duration}
+		{"duration"     , duration},
+		{"bpm"          , tempo},
+		{"amplitude"    , averageAmplitude}
 	};
 
 	// Save output to file
@@ -96,7 +167,6 @@ int main(int argc, char* argv[]) {
 	outputFile << std::setw(4) << output << std::endl;
 	outputFile.close();
 
-	file.close();
-
+	std::cout << "Complete." << std::endl;
 	return 0;
 }
