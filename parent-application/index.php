@@ -107,8 +107,28 @@ if (isset($_POST['submit'])) {
 		}
 	}
 	else if ($_POST['descriptor'] == descriptors['custom']) {
-		$path = WEBROOT."tmp/".pathinfo($_FILES['wav']['name'], PATHINFO_FILENAME).".txt";
-		$description = file_get_contents(WEBROOT."tmp/".pathinfo($_FILES['wav']['name'], PATHINFO_FILENAME).".txt");
+		$command = "python3 ".DOCROOT."descriptive-subtitle-ml/get_description.py ".escapeshellarg($name)." 1 ".WEBROOT."tmp/name.txt";
+		exec($command, $output, $status);
+		if ($status === 0) {
+			$description = file_get_contents(WEBROOT."tmp/name.txt");
+		}
+		else {
+			echo "ML EXEC FAIL:";
+			var_dump($output);
+		}
+
+		// $command = "python3 ".DOCROOT."descriptive-subtitle-ml/get_description.py ".escapeshellarg($name)." 2 /var/www/kieddemo/parent-application/tmp/test.txt 2>&1";
+		// exec($command, $output, $status);
+		// if ($status === 0) {
+		// 	$description = $output[0];
+		// }
+		// else {
+		// 	echo "ML EXEC FAIL:";
+		// 	var_dump($output);
+		// }		
+
+		// $path = WEBROOT."tmp/".pathinfo($_FILES['wav']['name'], PATHINFO_FILENAME).".txt";
+		// $description = file_get_contents(WEBROOT."tmp/".pathinfo($_FILES['wav']['name'], PATHINFO_FILENAME).".txt");
 	}
 }
 
